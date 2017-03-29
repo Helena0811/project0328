@@ -1,16 +1,19 @@
 package streamthread;
 
+import javax.swing.JLabel;
 import javax.swing.JProgressBar;
 
 public class ProgressThread extends Thread{
 	FileProgressBar fileProgressBar;
 	JProgressBar bar;
-	long fileSize;
+	JLabel label;
+	int fileSize;
 	int data;
-	long progress;
+	int progress=0;
 	
-	public ProgressThread(JProgressBar bar, long fileSize, int data) {
+	public ProgressThread(JProgressBar bar, JLabel label, int fileSize, int data) {
 		this.fileProgressBar=fileProgressBar;
+		this.label=label;
 		this.bar=bar;
 		this.fileSize=fileSize;
 		this.data=data;
@@ -28,8 +31,9 @@ public class ProgressThread extends Thread{
 			}
 			// progress+=100-(fileSize-data)%100;
 			// 파일 전체 크기 : 100% = 현재 읽은 크기 : ?%
-			progress=(100*data/fileSize);
-			bar.setValue((int)progress);
+			progress+=(100*data)/fileSize*100;
+			bar.setValue(progress/100);
+			label.setText(progress+"%");
 		}
 	}
 }

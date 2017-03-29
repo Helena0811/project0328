@@ -22,7 +22,7 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JTextField;
 
-public class FileProgressBar extends JFrame implements ActionListener{
+public class FileProgressBar extends JFrame implements ActionListener, Runnable{
 	JProgressBar bar;
 	JButton bt_open, bt_save, bt_copy;
 	JTextField txt_open, txt_save;
@@ -32,8 +32,10 @@ public class FileProgressBar extends JFrame implements ActionListener{
 	FileOutputStream fos;
 	JFileChooser chooser;
 	
+	Thread thread;
+	
 	String oriPath, savePath;
-	long fileSize=0;
+	int fileSize=0;
 	int pc=0;
 	
 	public FileProgressBar() {
@@ -51,6 +53,7 @@ public class FileProgressBar extends JFrame implements ActionListener{
 		txt_save=new JTextField("",30);
 		
 		add(bar);
+		add(percent);
 		add(bt_open);
 		add(txt_open);
 		add(bt_save);
@@ -90,15 +93,16 @@ public class FileProgressBar extends JFrame implements ActionListener{
 			}
 		}
 		else if(btn==bt_copy){
-			copy();
-			percent.setText(pc+"%");
+			// copy();	이 경우는 메인 쓰레드가 수행
+			thread=new Thread(this);
+			thread.start();
 		}
 	}
-	
+	/*
 	public void getPercent(int data, long fileSize){
 		pc=(100*data/fileSize);
 	}
-	
+	*/
 	// 복사할 파일 선택
 	public void open(){
 		// 탐색기 열기
@@ -109,7 +113,7 @@ public class FileProgressBar extends JFrame implements ActionListener{
 			oriPath=file.getAbsolutePath();
 			//System.out.println(oriPath);
 			txt_open.setText(oriPath);
-			fileSize=file.length();
+			fileSize=(int)file.length();
 		}
 	}
 	
@@ -143,12 +147,12 @@ public class FileProgressBar extends JFrame implements ActionListener{
 				// 파일을 복사(출력 스트림)
 				// 읽어올 파일에 데이터가 있는 경우에만 복사
 				fos.write(data);
+				System.out.println(fileSize);
 				System.out.println(data);
 				
-				// progress bar에 복사 진행률 반영
-				ProgressThread thread=new ProgressThread(bar, fileSize, data);
-				
 			}
+			// progress bar에 복사 진행률 반영
+			ProgressThread thread=new ProgressThread(bar, percent, fileSize, data);
 			JOptionPane.showMessageDialog(this, "복사 완료");
 		} catch (FileNotFoundException e) {
 			JOptionPane.showMessageDialog(this, "파일을 찾을 수 없습니다.");
@@ -165,13 +169,18 @@ public class FileProgressBar extends JFrame implements ActionListener{
 					fis.close();
 				}
 				if(fos!=null){
-					fis.close();
+					fos.close();
 				}
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	// 메인 쓰레드를 자유롭게 하기 위한 쓰레드가 복사 수행
+	public void run() {
+		copy();
 	}
 	
 	public static void main(String[] args) {
